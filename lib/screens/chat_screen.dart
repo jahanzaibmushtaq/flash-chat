@@ -87,6 +87,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       _fireStore.collection('messages').add({
                         'text': message,
                         'sender': _auth.currentUser?.email,
+                        'timestamp': FieldValue.serverTimestamp(),
                       });
                     },
                     child: const Text(
@@ -115,19 +116,21 @@ class MessageStream extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-        stream: _fireStore.collection('messages').snapshots(),
+        stream: _fireStore.collection("messages").orderBy('timestamp').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            final messages = snapshot.data!.docs;
+            final messages = snapshot.data!.docs.reversed;
             List<MessageBubble> messageBubbles = [];
             for (var message in messages) {
               final messageText = message['text'];
               final messageSender = message['sender'];
+              final messageTimestamp = message['timestamp'];
 
               final messageBubble = MessageBubble(
                 text: messageText,
                 sender: messageSender,
                 isMe: _auth.currentUser?.email == messageSender,
+                timesTamp: messageTimestamp,
               );
               print(
                   "current user email ${_auth.currentUser?.email} & message sender email $messageSender");
@@ -153,10 +156,11 @@ class MessageBubble extends StatelessWidget {
       {super.key,
       required this.text,
       required this.sender,
-      required this.isMe});
+      required this.isMe, required this.timesTamp});
   final String text;
   final String sender;
   final bool isMe;
+  final timesTamp;
   @override
   Widget build(BuildContext context) {
     return Padding(
